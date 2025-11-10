@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asesmen Konsep Router</title>
+    
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            max-width: 800px; 
+            margin: 20px auto; 
+            padding: 15px; 
+            background-color: #f4f4f9; 
+            color: #333;
+        }
+        div { 
+            background-color: #ffffff; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+            margin-bottom: 20px;
+        }
+        button { 
+            padding: 12px 20px; 
+            font-size: 16px; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 5px;
+        }
+        button:hover { 
+            background-color: #0056b3; 
+        }
+        input[type="text"], textarea { 
+            width: calc(100% - 20px); 
+            padding: 10px; 
+            margin: 8px 0 18px 0; 
+            border: 1px solid #ccc; 
+            border-radius: 8px;
+            font-size: 15px;
+        }
+        textarea { 
+            width: 97%; 
+            min-height: 120px;
+            font-family: inherit;
+        }
+        h1, h2, h3 { 
+            color: #333; 
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        h1 { text-align: center; border: none; }
+        #progressInfo { 
+            text-align: center; 
+            font-style: italic; 
+            color: #555; 
+            background: none; 
+            box-shadow: none; 
+            padding: 0;
+            margin-top: -10px;
+        }
+        .result-block { 
+            margin-bottom: 15px; 
+        }
+        .answer-display { 
+            background-color: #f9f9f9; 
+            border: 1px solid #eee; 
+            padding: 15px; 
+            border-radius: 8px; 
+            min-height: 50px; 
+            white-space: pre-wrap; /* Agar baris baru di jawaban tetap terlihat */
+        }
+        label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Asesmen Konsep Router</h1>
+    <p id="progressInfo">Pilih kelompok untuk memulai</p>
+    
+    <div id="group-selection-screen">
+        <h2>Pilih Kelompok Anda</h2>
+        <p>Setiap kelompok akan mendapatkan studi kasus yang berbeda.</p>
+        <button onclick="selectGroup(1)">Kelompok 1 (Kasus Kurir)</button>
+        <button onclick="selectGroup(2)">Kelompok 2 (Kasus Google Maps)</button>
+    </div>
+
+    <div id="identity-screen" style="display: none;">
+        <h2 id="identity-title">Identitas Kelompok</h2>
+        <form onsubmit="startQuiz(); return false;">
+            <div>
+                <label for="group-number-field">Kelompok ke-:</label><br>
+                <input type="text" id="group-number-field" readonly style="background-color: #eee;">
+            </div>
+            <div>
+                <label for="presence-1">Nomor Presensi Siswa 1:</label><br>
+                <input type="text" id="presence-1" placeholder="Contoh: 08" required>
+            </div>
+            <div>
+                <label for="presence-2">Nomor Presensi Siswa 2:</label><br>
+                <input type="text" id="presence-2" placeholder="Contoh: 15" required>
+            </div>
+            <div>
+                <label for="presence-3">Nomor Presensi Siswa 3 (Opsional):</label><br>
+                <input type="text" id="presence-3" placeholder="Contoh: 22">
+            </div>
+            <button type="submit">Mulai Kuis</button>
+        </form>
+    </div>
+
+    <div id="quiz-container" style="display: none;">
+        <h2 id="quiz-title">Judul Soal</h2>
+        <h3>Studi Kasus:</h3>
+        <p id="story">Cerita kasus akan muncul di sini.</p>
+        <h3 id="question" style="color: #0056b3; background-color: #f0f8ff; padding: 15px; border-radius: 8px;">Pertanyaan akan muncul di sini.</h3>
+        
+        <form onsubmit="submitQuiz(); return false;">
+            <label for="answer-input">Jawaban Anda:</label><br>
+            <textarea id="answer-input" rows="8" placeholder="Tulis jawaban dan alasan Anda di sini..." required></textarea><br>
+            <button type="submit">Kumpulkan Jawaban</button>
+        </form>
+    </div>
+
+    <div id="result-area" style="display: none;">
+        <h2>Hasil Jawaban</h2>
+        <div id="result-details"></div>
+    </div>
+
+
+    <script>
+        // Variabel Global
+        let selectedGroup = 0;
+        let identityData = {}; // Objek ini akan kita isi dengan data baru
+
+        // Data Soal
+        const questions = {
+            1: {
+                title: "Kasus 1: Kurir Paket dan Dua Perumahan",
+                story: "Bayangkan Anda seorang kurir paket yang bertugas mengantar barang. Ada dua perumahan yang terpisah: Perumahan A (alamatnya dimulai dengan Jalan Cendrawasih) dan Perumahan B (alamatnya dimulai dengan Jalan Rajawali). Anda mendapat paket yang tujuannya adalah Jalan Rajawali. Namun, Anda berada di dalam Perumahan A (Jalan Cendrawasih) dan tidak tahu cara masuk ke Perumahan B. Di persimpangan yang menghubungkan kedua perumahan, ada seorang satpam. Satpam ini tahu semua jalan di kedua perumahan dan tahu jalur tercepat untuk mengirim paket.",
+                question: "Berdasarkan cerita ini, siapa yang berperan sebagai router? Mengapa?"
+            },
+            2: {
+                title: "Kasus 2: Peta Jalan dan Google Maps",
+                story: "Bayangkan Anda ingin pergi dari rumah ke perpustakaan. Ada beberapa jalan yang bisa Anda pilih. Anda tidak tahu jalan mana yang paling cepat, jadi Anda membuka aplikasi Google Maps (router). Google Maps akan menganalisis semua jalur yang mungkin, seperti jalan lurus, jalan tol, atau jalan pintas. Berdasarkan informasi lalu lintas dan kondisi jalan, Google Maps akan memilih satu jalur terbaik untuk Anda ikuti. Anda akan mengikuti petunjuk dari Google Maps hingga sampai di perpustakaan.",
+                question: "Berdasarkan cerita ini, siapa yang berperan sebagai paket data? Mengapa?"
+            }
+        };
+
+        // Referensi elemen DOM
+        const groupSelectionScreen = document.getElementById('group-selection-screen');
+        const identityScreen = document.getElementById('identity-screen');
+        const quizContainer = document.getElementById('quiz-container');
+        const resultArea = document.getElementById('result-area');
+        const progressInfo = document.getElementById('progressInfo');
+
+        /**
+         * Fungsi untuk memilih kelompok dan menampilkan layar identitas.
+         * @param {number} groupNumber - Nomor kelompok (1 atau 2).
+         */
+        function selectGroup(groupNumber) {
+            selectedGroup = groupNumber;
+            groupSelectionScreen.style.display = 'none';
+            identityScreen.style.display = 'block';
+            document.getElementById('identity-title').textContent = `Identitas Kelompok ${groupNumber}`;
+            
+            // Secara otomatis mengisi input "Kelompok ke-"
+            document.getElementById('group-number-field').value = groupNumber; 
+            
+            progressInfo.textContent = 'Masukkan identitas kelompok';
+        }
+
+        /**
+         * Fungsi untuk memulai kuis setelah mengisi identitas.
+         */
+        function startQuiz() {
+            // Mengambil data dari form
+            identityData = {
+                kelompok: document.getElementById('group-number-field').value.trim(),
+                presensi1: document.getElementById('presence-1').value.trim(),
+                presensi2: document.getElementById('presence-2').value.trim(),
+                presensi3: document.getElementById('presence-3').value.trim(),
+            };
+
+            // Validasi: memastikan minimal 2 presensi diisi
+            if (!identityData.presensi1 || !identityData.presensi2) {
+                // (Validasi 'required' di HTML sudah menangani ini,
+                // tapi kita tambahkan untuk keamanan ganda)
+                alert('Mohon isi minimal Nomor Presensi Siswa 1 dan 2!');
+                return;
+            }
+
+            // Menampilkan soal yang sesuai
+            const soal = questions[selectedGroup];
+            document.getElementById('quiz-title').textContent = soal.title;
+            document.getElementById('story').textContent = soal.story;
+            document.getElementById('question').textContent = soal.question;
+            
+            identityScreen.style.display = 'none';
+            quizContainer.style.display = 'block';
+            progressInfo.textContent = `Kelompok ${selectedGroup} sedang mengerjakan...`;
+        }
+
+        /**
+         * Fungsi untuk mengumpulkan jawaban, menampilkan hasil,
+         * DAN menyediakan link kirim ke Telegram.
+         */
+        function submitQuiz() {
+            const answer = document.getElementById('answer-input').value.trim();
+
+            if (answer === '') {
+                // (Validasi 'required' di HTML sudah menangani ini)
+                alert('Mohon isi jawaban Anda sebelum mengumpulkan!');
+                return;
+            }
+
+            // Sembunyikan kontainer kuis dan tampilkan area hasil
+            quizContainer.style.display = 'none';
+            resultArea.style.display = 'block';
+            progressInfo.textContent = 'Hasil Asesmen';
+
+            // --- PERSIAPAN DATA UNTUK TELEGRAM ---
+
+            // 1. USERNAME TELEGRAM ANDA SUDAH DIMASUKKAN
+            const telegramUsername = "Teodulus Vallent"; // <--- SUDAH DIGANTI
+
+            const soal = questions[selectedGroup];
+            
+            // 2. Format pesan yang akan dikirim ke Telegram
+            // Kita gunakan \n untuk membuat baris baru
+            let pesanTelegram = `
+--- 🔔 HASIL ASESMEN ROUTER ---
+
+Identitas:
+- Kelompok: ${identityData.kelompok}
+- Siswa 1: ${identityData.presensi1}
+- Siswa 2: ${identityData.presensi2}
+`;
+            
+            // Tambahkan Siswa 3 hanya jika diisi
+            if (identityData.presensi3) {
+                pesanTelegram += `- Siswa 3: ${identityData.presensi3}\n`;
+            }
+
+            pesanTelegram += `
+Soal (Kasus ${selectedGroup}):
+${soal.question}
+
+--- JAWABAN KELOMPOK ---
+${answer}
+`;
+            // 3. Buat link Telegram yang sudah di-encode
+            // encodeURIComponent() penting agar spasi dan baris baru berfungsi di URL
+            const telegramURL = `https://t.me/${telegramUsername}?text=${encodeURIComponent(pesanTelegram)}`;
+
+
+            // --- TAMPILKAN HASIL DI HALAMAN ---
+            
+            const resultDetails = document.getElementById('result-details');
+            
+            let presensi3HTML = '';
+            if (identityData.presensi3) {
+                presensi3HTML = `<p><strong>Nomor Presensi 3:</strong> ${identityData.presensi3}</p>`;
+            }
+
+            // 4. Kita tambahkan tombol "Kirim via Telegram" ke dalam HTML hasil
+            resultDetails.innerHTML = `
+                <div class="result-block">
+                    <h3>Identitas Kelompok ${identityData.kelompok}</h3>
+                    <p><strong>Nomor Presensi 1:</strong> ${identityData.presensi1}</p>
+                    <p><strong>Nomor Presensi 2:</strong> ${identityData.presensi2}</p>
+                    ${presensi3HTML}
+                </div>
+                <hr style="margin: 20px 0;">
+                <div class="result-block">
+                    <h3>Soal</h3>
+                    <p>${soal.story}</p>
+                    <p><strong>Pertanyaan: ${soal.question}</strong></p>
+                </div>
+                <div class="result-block">
+                    <h3>Jawaban Kelompok</h3>
+                    <div class="answer-display">${answer}</div>
+                </div>
+                
+                <div style="text-align: center; padding: 25px; background-color: #f0f8ff; border: 1px solid #0088cc; border-radius: 12px; margin-top: 25px;">
+                    <h3 style="margin-top: 0; border: none;">Langkah Selanjutnya: Kirim Jawaban</h3>
+                    <p>Jawaban Anda sudah selesai. Silakan kirim hasilnya kepada guru dengan menekan tombol di bawah ini.</p>
+                    
+                    <a href="${telegramURL}" target="_blank" style="display: inline-block; padding: 12px 25px; font-size: 18px; background-color: #0088cc; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        Kirim Jawaban via Telegram
+                    </a>
+                    <p style="font-size: 12px; margin-top: 10px; color: #555;">(Anda akan diarahkan ke aplikasi Telegram)</p>
+                </div>
+                
+                <hr style="margin: 20px 0;">
+                <p style="text-align:center; font-style: italic;">Ruang untuk Penilaian Guru:</p>
+                <br><br>
+            `;
+        }
+    </script>
+
+</body>
+</html>
